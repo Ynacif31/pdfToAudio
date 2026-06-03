@@ -24,3 +24,11 @@ class ExtractedDocument:
     toc: list[TocItem]
     pages: list[PageData]
     full_text: str
+
+
+@dataclass
+class ChapterData:
+    title: str
+    start_page: int
+    end_page: int
+    text_combined: str
