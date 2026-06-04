@@ -1,0 +1,65 @@
+{
+  "info": {
+    "name": "PDF to Audio",
+    "description": "Upload a PDF via form-data field `file` (same as Postman File type).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Extract PDF (upload file)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Select your .pdf file here"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/extract"
+      }
+    },
+    {
+      "name": "Extract PDF + save JSON on server",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/extract?save=true",
+          "host": ["{{baseUrl}}"],
+          "path": ["extract"],
+          "query": [{ "key": "save", "value": "true" }]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ]
+}

@@ -1,2 +1,5 @@
 pymupdf
 pytest
+fastapi
+uvicorn[standard]
+python-multipart

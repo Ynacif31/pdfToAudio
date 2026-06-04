@@ -1,58 +1,64 @@
 from __future__ import annotations
 
-import json
-from dataclasses import asdict
+import argparse
+import sys
 from pathlib import Path
 
-from app.extract import extract_pdf
-from app.cleanup import clean_pages, detect_repeated_lines
-from app.models import ExtractedDocument
+from app.io import default_output_path, save_to_json
+from app.pipeline import process_pdf_file
 
 
-def save_to_json(data: ExtractedDocument, output_path: str) -> None:
-    output_file = Path(output_path)
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-
-    serializable = {
-        "file_name": data.file_name,
-        "total_pages": data.total_pages,
-        "toc": [asdict(item) for item in data.toc],
-        "pages": [asdict(page) for page in data.pages],
-        "full_text": data.full_text,
-    }
-
-    output_file.write_text(
-        json.dumps(serializable, ensure_ascii=False, indent=2),
-        encoding="utf-8",
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Extract text from a PDF and split into chapters when a TOC exists.",
     )
+    parser.add_argument(
+        "pdf",
+        type=Path,
+        help="Path to the PDF file to process",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="Output JSON path (default: output/<pdf-name>/extracted.json)",
+    )
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    pdf_path = "CV-Ygor Nacif.pdf"
-    output_path = "output/extracted.json"
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    pdf_path = args.pdf.resolve()
+
+    if not pdf_path.is_file():
+        print(f"Error: PDF not found: {pdf_path}", file=sys.stderr)
+        sys.exit(1)
+    if pdf_path.suffix.lower() != ".pdf":
+        print(f"Error: not a PDF file: {pdf_path}", file=sys.stderr)
+        sys.exit(1)
+
+    output_path = (args.output or default_output_path(pdf_path)).resolve()
 
     print(f"Extracting: {pdf_path}")
-    extracted = extract_pdf(pdf_path)
+    result = process_pdf_file(str(pdf_path))
 
-    print(f"  Pages: {extracted.total_pages}")
-    print(f"  TOC items: {len(extracted.toc)}")
+    print(f"  Pages: {result.extracted.total_pages}")
+    print(f"  TOC items: {len(result.extracted.toc)}")
 
-    repeated = detect_repeated_lines(extracted.pages)
-    if repeated:
-        print(f"  Repeated lines found (headers/footers): {len(repeated)}")
-        for line in sorted(repeated):
+    if result.repeated_lines:
+        print(f"  Repeated lines found (headers/footers): {len(result.repeated_lines)}")
+        for line in sorted(result.repeated_lines):
             print(f'    - "{line}"')
 
-    cleaned_pages = clean_pages(extracted.pages)
-    extracted = ExtractedDocument(
-        file_name=extracted.file_name,
-        total_pages=extracted.total_pages,
-        toc=extracted.toc,
-        pages=cleaned_pages,
-        full_text=extracted.full_text,
-    )
+    print(f"  Chapters: {len(result.chapters)}")
+    for i, ch in enumerate(result.chapters, start=1):
+        print(
+            f"    {i}. {ch.title} (pp. {ch.start_page}-{ch.end_page})"
+            f" — {len(ch.text_combined)} chars"
+        )
 
-    save_to_json(extracted, output_path)
+    save_to_json(result.extracted, str(output_path))
     print(f"  JSON saved to: {output_path}")
 
 

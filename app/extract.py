@@ -59,6 +59,20 @@ def build_full_text(pages: list[PageData]) -> str:
     return "".join(parts).strip()
 
 
+def build_extracted_document(doc: pymupdf.Document, file_name: str) -> ExtractedDocument:
+    toc = extract_toc(doc)
+    pages = extract_pages(doc)
+    full_text = build_full_text(pages)
+
+    return ExtractedDocument(
+        file_name=file_name,
+        total_pages=len(doc),
+        toc=toc,
+        pages=pages,
+        full_text=full_text,
+    )
+
+
 def extract_pdf(pdf_path: str) -> ExtractedDocument:
     pdf_file = Path(pdf_path)
 
@@ -68,16 +82,18 @@ def extract_pdf(pdf_path: str) -> ExtractedDocument:
     doc = pymupdf.open(pdf_file)
 
     try:
-        toc = extract_toc(doc)
-        pages = extract_pages(doc)
-        full_text = build_full_text(pages)
+        return build_extracted_document(doc, pdf_file.name)
+    finally:
+        doc.close()
 
-        return ExtractedDocument(
-            file_name=pdf_file.name,
-            total_pages=len(doc),
-            toc=toc,
-            pages=pages,
-            full_text=full_text,
-        )
+
+def extract_pdf_bytes(data: bytes, file_name: str) -> ExtractedDocument:
+    if not data:
+        raise ValueError("PDF data is empty")
+
+    doc = pymupdf.open(stream=data, filetype="pdf")
+
+    try:
+        return build_extracted_document(doc, file_name)
     finally:
         doc.close()
