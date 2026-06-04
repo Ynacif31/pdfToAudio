@@ -4,7 +4,12 @@ import argparse
 import sys
 from pathlib import Path
 
-from app.io import default_output_path, save_to_json
+from app.io import (
+    chapters_path_beside,
+    default_output_path,
+    save_chapters_to_json,
+    save_to_json,
+)
 from app.pipeline import process_pdf_file
 
 
@@ -58,8 +63,12 @@ def main(argv: list[str] | None = None) -> None:
             f" — {len(ch.text_combined)} chars"
         )
 
+    chapters_path = chapters_path_beside(output_path)
+
     save_to_json(result.extracted, str(output_path))
+    save_chapters_to_json(result.chapters, str(chapters_path))
     print(f"  JSON saved to: {output_path}")
+    print(f"  Chapters JSON saved to: {chapters_path}")
 
 
 if __name__ == "__main__":

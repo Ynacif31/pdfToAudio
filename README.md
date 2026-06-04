@@ -1,12 +1,33 @@
 # PDF to Audio
 
-Projeto inicial para extrair texto de PDFs e preparar uma pipeline para conversão em audiolivro.
+Extrai texto de PDFs, limpa cabeçalhos/rodapés repetidos, divide por capítulos (TOC) e prepara a pipeline para conversão em audiolivro.
 
 ## Funcionalidades atuais
 
-- Extração de texto página a página
+- Extração de texto página a página (PyMuPDF)
 - Leitura de TOC/sumário do PDF, quando disponível
-- Exportação do conteúdo extraído para JSON
+- Remoção de linhas repetidas nas bordas das páginas (headers/footers)
+- Separação em capítulos via TOC (ou capítulo único sem TOC)
+- Exportação para `extracted.json` e `chapters.json`
+- CLI (`main.py`) e API HTTP (`server.py`) com upload estilo Postman
+
+## Estrutura do projeto
+
+```text
+pdfToAudio/
+├── app/
+│   ├── models.py      # tipos (PageData, ChapterData, …)
+│   ├── extract.py     # leitura do PDF (arquivo ou bytes)
+│   ├── cleanup.py     # limpeza de headers/footers
+│   ├── chapters.py    # divisão por capítulos
+│   ├── pipeline.py    # orquestração (CLI + API)
+│   └── io.py          # gravação JSON
+├── tests/
+├── postman/           # collection para testar a API
+├── main.py            # entrada CLI
+├── server.py          # entrada API (FastAPI)
+└── output/            # gerado localmente (gitignored)
+```
 
 ## Requisitos
 
@@ -24,50 +45,46 @@ pip install -r requirements.txt
 
 ## Uso (linha de comando)
 
-Passe o caminho do PDF como argumento:
-
 ```bash
 python main.py caminho/para/livro.pdf
 ```
 
-Saída padrão (por nome do arquivo):
+Saída padrão:
 
-```bash
+```text
 output/<nome-do-pdf>/extracted.json
+output/<nome-do-pdf>/chapters.json
 ```
 
-Caminho de saída customizado:
+Caminho customizado só para `extracted.json` (capítulos ficam na mesma pasta):
 
 ```bash
-python main.py livro.pdf -o output/meu-livro.json
+python main.py livro.pdf -o output/meu-livro/extracted.json
 ```
 
 ## Uso no Postman (upload de arquivo)
 
-O Postman envia arquivos em requisições HTTP. Suba a API local, depois anexe o PDF como no Postman:
-
 ```bash
-pip install -r requirements.txt
 python server.py
 ```
 
-1. Importe a collection: `postman/pdf-to-audio.postman_collection.json`
+1. Importe `postman/pdf-to-audio.postman_collection.json`
 2. Request **Extract PDF (upload file)**
-3. Aba **Body** → **form-data**
-4. Campo `file` → tipo **File** → escolha o `.pdf`
-5. **Send**
+3. **Body** → **form-data** → campo `file` (tipo **File**) → selecione o PDF
+4. **Send** → `POST http://127.0.0.1:8000/extract`
 
-URL: `POST http://127.0.0.1:8000/extract`
-
-Para gravar JSON no disco do servidor: `POST /extract?save=true`
+Gravar JSON no disco do servidor: `POST /extract?save=true` → cria `extracted.json` e `chapters.json` em `output/<nome-do-pdf>/`.
 
 Documentação interativa: http://127.0.0.1:8000/docs
 
-Script legado na raiz (`extract_pdf.py`) ainda existe; prefira `main.py` (CLI) ou `server.py` (Postman).
+## Testes
+
+```bash
+pytest -v
+```
 
 ## Próximos passos
 
-- Limpeza de cabeçalhos e rodapés
-- Separação automática por capítulos
-- Geração de áudio com TTS
-- Exportação como audiolivro
+- Geração de áudio com TTS (por capítulo)
+- Metadados e exportação como audiolivro (M4B / playlist)
+- Filtro de TOC por nível (`level`) e heurísticas sem sumário

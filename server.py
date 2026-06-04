@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
-from app.io import default_output_path, save_to_json
+from app.io import default_chapters_path, default_output_path, save_chapters_to_json, save_to_json
 from app.pipeline import (
     PipelineResult,
     pipeline_result_to_dict,
@@ -29,7 +29,7 @@ async def extract_endpoint(
     file: UploadFile = File(..., description="PDF file (form-data, type File)"),
     save: bool = Query(
         False,
-        description="If true, also writes output/<pdf-name>/extracted.json on disk",
+        description="If true, writes output/<pdf-name>/extracted.json and chapters.json on disk",
     ),
 ) -> JSONResponse:
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -53,10 +53,16 @@ async def extract_endpoint(
     return JSONResponse(content=payload)
 
 
-def _save_result(result: PipelineResult) -> str:
-    output_path = default_output_path(Path(result.extracted.file_name))
-    save_to_json(result.extracted, str(output_path))
-    return str(output_path.resolve())
+def _save_result(result: PipelineResult) -> dict[str, str]:
+    pdf_ref = Path(result.extracted.file_name)
+    extracted_path = default_output_path(pdf_ref)
+    chapters_path = default_chapters_path(pdf_ref)
+    save_to_json(result.extracted, str(extracted_path))
+    save_chapters_to_json(result.chapters, str(chapters_path))
+    return {
+        "extracted": str(extracted_path.resolve()),
+        "chapters": str(chapters_path.resolve()),
+    }
 
 
 if __name__ == "__main__":
