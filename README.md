@@ -1,38 +1,41 @@
 # PDF to Audio
 
-Extrai texto de PDFs, limpa cabeçalhos/rodapés repetidos, divide por capítulos (TOC) e prepara a pipeline para conversão em audiolivro.
+Extrai texto de PDFs, limpa cabeçalhos/rodapés, divide por capítulos e gera áudio (TTS) por capítulo.
 
-## Funcionalidades atuais
+## Funcionalidades
 
 - Extração de texto página a página (PyMuPDF)
 - Leitura de TOC/sumário do PDF, quando disponível
-- Remoção de linhas repetidas nas bordas das páginas (headers/footers)
+- Remoção de linhas repetidas nas bordas (headers/footers)
 - Separação em capítulos via TOC (ou capítulo único sem TOC)
 - Exportação para `extracted.json` e `chapters.json`
+- TTS por capítulo com **edge-tts** (MP3 + playlist `.m3u`)
 - CLI (`main.py`) e API HTTP (`server.py`) com upload estilo Postman
 
-## Estrutura do projeto
+## Estrutura
 
 ```text
 pdfToAudio/
 ├── app/
-│   ├── models.py      # tipos (PageData, ChapterData, …)
-│   ├── extract.py     # leitura do PDF (arquivo ou bytes)
-│   ├── cleanup.py     # limpeza de headers/footers
-│   ├── chapters.py    # divisão por capítulos
-│   ├── pipeline.py    # orquestração (CLI + API)
-│   └── io.py          # gravação JSON
+│   ├── models.py
+│   ├── extract.py
+│   ├── cleanup.py
+│   ├── chapters.py
+│   ├── tts.py         # síntese de áudio por capítulo
+│   ├── pipeline.py
+│   └── io.py
 ├── tests/
-├── postman/           # collection para testar a API
-├── main.py            # entrada CLI
-├── server.py          # entrada API (FastAPI)
+├── postman/
+├── main.py
+├── server.py
 └── output/            # gerado localmente (gitignored)
 ```
 
 ## Requisitos
 
-- Python 3.12+
+- Python 3.9+ (3.12+ recomendado)
 - Ambiente virtual recomendado
+- Internet para TTS (`edge-tts`)
 
 ## Instalação
 
@@ -43,10 +46,19 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Uso (linha de comando)
+## Uso (CLI)
+
+Só extrair texto e capítulos:
 
 ```bash
 python main.py caminho/para/livro.pdf
+```
+
+Extrair **e** gerar áudio:
+
+```bash
+python main.py livro.pdf --tts
+python main.py livro.pdf --tts --voice pt-BR-AntonioNeural
 ```
 
 Saída padrão:
@@ -54,37 +66,45 @@ Saída padrão:
 ```text
 output/<nome-do-pdf>/extracted.json
 output/<nome-do-pdf>/chapters.json
+output/<nome-do-pdf>/audio/
+  ├── 01-titulo.mp3
+  ├── 02-outro.mp3
+  └── playlist.m3u
 ```
 
-Caminho customizado só para `extracted.json` (capítulos ficam na mesma pasta):
+Listar vozes em português:
 
 ```bash
-python main.py livro.pdf -o output/meu-livro/extracted.json
+edge-tts --list-voices | grep pt-BR
 ```
 
-## Uso no Postman (upload de arquivo)
+## Uso no Postman
 
 ```bash
 python server.py
 ```
 
 1. Importe `postman/pdf-to-audio.postman_collection.json`
-2. Request **Extract PDF (upload file)**
-3. **Body** → **form-data** → campo `file` (tipo **File**) → selecione o PDF
-4. **Send** → `POST http://127.0.0.1:8000/extract`
+2. **Body** → **form-data** → campo `file` (tipo **File**)
+3. Requests:
+   - `POST /extract` — só JSON na resposta
+   - `POST /extract?save=true` — grava JSON no disco
+   - `POST /extract?save=true&tts=true` — JSON + MP3 (pode demorar)
 
-Gravar JSON no disco do servidor: `POST /extract?save=true` → cria `extracted.json` e `chapters.json` em `output/<nome-do-pdf>/`.
-
-Documentação interativa: http://127.0.0.1:8000/docs
+Docs: http://127.0.0.1:8000/docs
 
 ## Testes
 
 ```bash
-pytest -v
+# unidade + integração rápida (sem rede)
+pytest -v -m "not e2e"
+
+# end-to-end (gera PDF, roda CLI com --tts; precisa de internet)
+pytest -v -m e2e
 ```
 
-## Próximos passos
+## Próximos passos (opcional)
 
-- Geração de áudio com TTS (por capítulo)
-- Metadados e exportação como audiolivro (M4B / playlist)
+- Exportação M4B com metadados
 - Filtro de TOC por nível (`level`) e heurísticas sem sumário
+- Jobs em background para TTS na API (evitar timeout em PDFs longos)

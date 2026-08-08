@@ -54,6 +54,7 @@ temp/
 *.wav
 *.m4a
 *.m4b
+*.m3u
 *.zip
 
 # Local PDFs used only for testing

@@ -54,6 +54,34 @@
           "query": [{ "key": "save", "value": "true" }]
         }
       }
+    },
+    {
+      "name": "Extract PDF + TTS (save audio)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Select your .pdf file here (TTS can take a while)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/extract?save=true&tts=true&voice=pt-BR-FranciscaNeural",
+          "host": ["{{baseUrl}}"],
+          "path": ["extract"],
+          "query": [
+            { "key": "save", "value": "true" },
+            { "key": "tts", "value": "true" },
+            { "key": "voice", "value": "pt-BR-FranciscaNeural" }
+          ]
+        }
+      }
     }
   ],
   "variable": [

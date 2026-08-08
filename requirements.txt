@@ -3,3 +3,4 @@ pytest
 fastapi
 uvicorn[standard]
 python-multipart
+edge-tts

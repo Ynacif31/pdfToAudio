@@ -23,6 +23,14 @@ def chapters_path_beside(extracted_path: Path) -> Path:
     return extracted_path.parent / "chapters.json"
 
 
+def default_audio_dir(pdf_path: Path) -> Path:
+    return output_dir_for(pdf_path) / "audio"
+
+
+def audio_dir_beside(extracted_path: Path) -> Path:
+    return extracted_path.parent / "audio"
+
+
 def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

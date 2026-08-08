@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 from app.io import (
+    audio_dir_beside,
     chapters_path_beside,
+    default_audio_dir,
     default_chapters_path,
     save_chapters_to_json,
 )
@@ -20,6 +22,14 @@ class TestIoPaths:
     def test_chapters_path_beside_extracted(self) -> None:
         assert chapters_path_beside(Path("output/x/extracted.json")) == Path(
             "output/x/chapters.json"
+        )
+
+    def test_default_audio_dir(self) -> None:
+        assert default_audio_dir(Path("livro.pdf")) == Path("output/livro/audio")
+
+    def test_audio_dir_beside(self) -> None:
+        assert audio_dir_beside(Path("output/x/extracted.json")) == Path(
+            "output/x/audio"
         )
 
 
